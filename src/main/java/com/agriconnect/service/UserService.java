@@ -1,5 +1,7 @@
 package com.agriconnect.service;
 
+import com.agriconnect.dto.LoginRequest;
+import com.agriconnect.dto.LoginResponse;
 import com.agriconnect.dto.UserRequest;
 import com.agriconnect.entity.User;
 import com.agriconnect.exception.UserAlreadyExistsException;
@@ -18,6 +20,7 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // ---------------- REGISTER ----------------
     public User registerUser(UserRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -33,12 +36,28 @@ public class UserService {
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-
-        // Encrypt the password before saving
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
         user.setRole(request.getRole());
 
         return userRepository.save(user);
+    }
+
+    // ---------------- LOGIN ----------------
+    public LoginResponse loginUser(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        return new LoginResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole(),
+                "Login Successful"
+        );
     }
 }
