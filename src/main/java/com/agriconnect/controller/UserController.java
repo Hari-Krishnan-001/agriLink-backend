@@ -5,6 +5,7 @@ import com.agriconnect.dto.LoginResponse;
 import com.agriconnect.dto.UserRequest;
 import com.agriconnect.entity.User;
 import com.agriconnect.service.UserService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,15 +23,18 @@ public class UserController {
         return "AgriConnect Backend is Working!";
     }
 
-    // ---------------- REGISTER ----------------
     @PostMapping("/register")
     public User registerUser(@RequestBody UserRequest request) {
         return userService.registerUser(request);
     }
 
-    // ---------------- LOGIN ----------------
     @PostMapping("/login")
     public LoginResponse loginUser(@RequestBody LoginRequest request) {
         return userService.loginUser(request);
+    }
+
+    @GetMapping("/profile")
+    public String profile(Authentication authentication) {
+        return "Welcome " + authentication.getName();
     }
 }
