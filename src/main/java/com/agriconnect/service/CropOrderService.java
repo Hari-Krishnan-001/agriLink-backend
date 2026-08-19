@@ -2,14 +2,8 @@ package com.agriconnect.service;
 
 import com.agriconnect.dto.CropOrderRequest;
 import com.agriconnect.dto.CropOrderResponse;
-import com.agriconnect.entity.BusinessFirm;
-import com.agriconnect.entity.Crop;
-import com.agriconnect.entity.CropOrder;
-import com.agriconnect.entity.User;
-import com.agriconnect.repository.BusinessFirmRepository;
-import com.agriconnect.repository.CropOrderRepository;
-import com.agriconnect.repository.CropRepository;
-import com.agriconnect.repository.UserRepository;
+import com.agriconnect.entity.*;
+import com.agriconnect.repository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -22,17 +16,20 @@ public class CropOrderService {
     private final CropRepository cropRepository;
     private final BusinessFirmRepository businessFirmRepository;
     private final UserRepository userRepository;
+    private final FarmerRepository farmerRepository;
 
     public CropOrderService(
             CropOrderRepository cropOrderRepository,
             CropRepository cropRepository,
             BusinessFirmRepository businessFirmRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            FarmerRepository farmerRepository) {
 
         this.cropOrderRepository = cropOrderRepository;
         this.cropRepository = cropRepository;
         this.businessFirmRepository = businessFirmRepository;
         this.userRepository = userRepository;
+        this.farmerRepository = farmerRepository;
     }
 
     public CropOrderResponse placeOrder(
@@ -78,12 +75,10 @@ public class CropOrderService {
     public List<CropOrderResponse> getMyOrders(
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
+        User user = userRepository
+                .findByEmail(authentication.getName())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
+                        new RuntimeException("User not found"));
 
         BusinessFirm businessFirm =
                 businessFirmRepository.findByUser(user)
@@ -96,6 +91,55 @@ public class CropOrderService {
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
+    }
+
+    public List<CropOrderResponse> getFarmerOrders(
+            Authentication authentication) {
+
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        Farmer farmer = farmerRepository
+                .findByUser(user)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Farmer profile not found"));
+
+        return cropOrderRepository
+                .findByCropFarmer(farmer)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    public CropOrderResponse approveOrder(Long id) {
+
+        CropOrder order =
+                cropOrderRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Order not found"));
+
+        order.setStatus("APPROVED");
+
+        return convertToResponse(
+                cropOrderRepository.save(order));
+    }
+
+    public CropOrderResponse rejectOrder(Long id) {
+
+        CropOrder order =
+                cropOrderRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Order not found"));
+
+        order.setStatus("REJECTED");
+
+        return convertToResponse(
+                cropOrderRepository.save(order));
     }
 
     private CropOrderResponse convertToResponse(

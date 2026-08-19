@@ -14,5 +14,6 @@ public interface CropRepository extends JpaRepository<Crop, Long> {
     Optional<Crop> findByIdAndFarmer(Long id, Farmer farmer);
 
     List<Crop> findByAvailableTrue();
+    long countByFarmer(Farmer farmer);
 
 }

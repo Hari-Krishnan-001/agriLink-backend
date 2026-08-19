@@ -37,4 +37,26 @@ public class CropOrderController {
         return cropOrderService.getMyOrders(
                 authentication);
     }
+
+    @GetMapping("/farmer")
+    public List<CropOrderResponse> getFarmerOrders(
+            Authentication authentication) {
+
+        return cropOrderService.getFarmerOrders(
+                authentication);
+    }
+
+    @PutMapping("/{id}/approve")
+    public CropOrderResponse approveOrder(
+            @PathVariable Long id) {
+
+        return cropOrderService.approveOrder(id);
+    }
+
+    @PutMapping("/{id}/reject")
+    public CropOrderResponse rejectOrder(
+            @PathVariable Long id) {
+
+        return cropOrderService.rejectOrder(id);
+    }
 }

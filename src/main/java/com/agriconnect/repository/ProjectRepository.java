@@ -10,4 +10,5 @@ public interface ProjectRepository
         extends JpaRepository<Project, Long> {
 
     List<Project> findByStudent(Student student);
+    long countByStudent(Student student);
 }
