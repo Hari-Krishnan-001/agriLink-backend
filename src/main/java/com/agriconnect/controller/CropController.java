@@ -18,7 +18,10 @@ public class CropController {
         this.cropService = cropService;
     }
 
-    // Create Crop
+    // ==========================================
+    // CREATE CROP
+    // POST /api/crops
+    // ==========================================
     @PostMapping
     public CropResponse createCrop(
             @RequestBody CropRequest request,
@@ -27,7 +30,11 @@ public class CropController {
         return cropService.createCrop(request, authentication);
     }
 
-    // Get My Crops
+
+    // ==========================================
+    // GET MY CROPS
+    // GET /api/crops/my-crops
+    // ==========================================
     @GetMapping("/my-crops")
     public List<CropResponse> getMyCrops(
             Authentication authentication
@@ -35,13 +42,21 @@ public class CropController {
         return cropService.getMyCrops(authentication);
     }
 
-    // Get All Available Crops
-    @GetMapping
+
+    // ==========================================
+    // GET ALL AVAILABLE CROPS
+    // GET /api/crops/available
+    // ==========================================
+    @GetMapping("/available")
     public List<CropResponse> getAvailableCrops() {
         return cropService.getAvailableCrops();
     }
 
-    // Get Single Crop
+
+    // ==========================================
+    // GET SINGLE CROP
+    // GET /api/crops/{id}
+    // ==========================================
     @GetMapping("/{id}")
     public CropResponse getCropById(
             @PathVariable Long id
@@ -49,22 +64,37 @@ public class CropController {
         return cropService.getCropById(id);
     }
 
-    // Update Crop
+
+    // ==========================================
+    // UPDATE CROP
+    // PUT /api/crops/{id}
+    // ==========================================
     @PutMapping("/{id}")
     public CropResponse updateCrop(
             @PathVariable Long id,
             @RequestBody CropRequest request,
             Authentication authentication
     ) {
-        return cropService.updateCrop(id, request, authentication);
+        return cropService.updateCrop(
+                id,
+                request,
+                authentication
+        );
     }
 
-    // Delete Crop
+
+    // ==========================================
+    // DELETE CROP
+    // DELETE /api/crops/{id}
+    // ==========================================
     @DeleteMapping("/{id}")
     public String deleteCrop(
             @PathVariable Long id,
             Authentication authentication
     ) {
-        return cropService.deleteCrop(id, authentication);
+        return cropService.deleteCrop(
+                id,
+                authentication
+        );
     }
 }

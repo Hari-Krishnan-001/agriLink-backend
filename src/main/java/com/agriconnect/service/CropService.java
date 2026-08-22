@@ -23,6 +23,7 @@ public class CropService {
     public CropService(CropRepository cropRepository,
                        UserRepository userRepository,
                        FarmerRepository farmerRepository) {
+
         this.cropRepository = cropRepository;
         this.userRepository = userRepository;
         this.farmerRepository = farmerRepository;
@@ -80,7 +81,8 @@ public class CropService {
     public CropResponse getCropById(Long id) {
 
         Crop crop = cropRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Crop not found."));
+                .orElseThrow(() ->
+                        new RuntimeException("Crop not found."));
 
         return convertToResponse(crop);
     }
@@ -94,7 +96,9 @@ public class CropService {
 
         Crop crop = cropRepository.findByIdAndFarmer(id, farmer)
                 .orElseThrow(() ->
-                        new RuntimeException("Crop not found or you are not authorized to modify it."));
+                        new RuntimeException(
+                                "Crop not found or you are not authorized to modify it."
+                        ));
 
         crop.setCropName(request.getCropName());
         crop.setCategory(request.getCategory());
@@ -113,7 +117,7 @@ public class CropService {
         return convertToResponse(updatedCrop);
     }
 
-    // DELETE CROP
+    // DELETE CROP - SOFT DELETE
     public String deleteCrop(Long id,
                              Authentication authentication) {
 
@@ -121,11 +125,23 @@ public class CropService {
 
         Crop crop = cropRepository.findByIdAndFarmer(id, farmer)
                 .orElseThrow(() ->
-                        new RuntimeException("Crop not found or you are not authorized to delete it."));
+                        new RuntimeException(
+                                "Crop not found or you are not authorized to remove it."
+                        ));
 
-        cropRepository.delete(crop);
+        /*
+         * Do not physically delete the crop.
+         *
+         * A crop may already be referenced by an order in crop_orders.
+         * Physically deleting it would violate the foreign key constraint.
+         *
+         * Instead, mark it as unavailable.
+         */
+        crop.setAvailable(false);
 
-        return "Crop deleted successfully.";
+        cropRepository.save(crop);
+
+        return "Crop removed from marketplace successfully.";
     }
 
     // GET AUTHENTICATED FARMER
@@ -134,11 +150,14 @@ public class CropService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found."));
 
         return farmerRepository.findByUser(user)
                 .orElseThrow(() ->
-                        new RuntimeException("Farmer profile not found. Please create a farmer profile first."));
+                        new RuntimeException(
+                                "Farmer profile not found. Please create a farmer profile first."
+                        ));
     }
 
     // CONVERT ENTITY TO RESPONSE
