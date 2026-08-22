@@ -20,42 +20,76 @@ public class ProjectService {
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
 
-    public ProjectService(ProjectRepository projectRepository,
-                          StudentRepository studentRepository,
-                          UserRepository userRepository) {
+
+    // ========================================
+    // CONSTRUCTOR
+    // ========================================
+
+    public ProjectService(
+            ProjectRepository projectRepository,
+            StudentRepository studentRepository,
+            UserRepository userRepository) {
 
         this.projectRepository = projectRepository;
         this.studentRepository = studentRepository;
         this.userRepository = userRepository;
     }
 
-    public ProjectResponse createProject(ProjectRequest request,
-                                         Authentication authentication) {
+
+    // ========================================
+    // CREATE PROJECT
+    // ========================================
+
+    public ProjectResponse createProject(
+            ProjectRequest request,
+            Authentication authentication) {
 
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new RuntimeException(
+                                "User not found"));
 
-        Student student = studentRepository.findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException("Student profile not found"));
+        Student student =
+                studentRepository.findByUser(user)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student profile not found"));
 
         Project project = new Project();
 
         project.setStudent(student);
-        project.setTitle(request.getTitle());
-        project.setProblem(request.getProblem());
-        project.setSolution(request.getSolution());
-        project.setTechnology(request.getTechnology());
-        project.setFundingRequired(request.getFundingRequired());
-        project.setDescription(request.getDescription());
 
-        Project savedProject = projectRepository.save(project);
+        project.setTitle(
+                request.getTitle());
 
-        return convertToResponse(savedProject);
+        project.setProblem(
+                request.getProblem());
+
+        project.setSolution(
+                request.getSolution());
+
+        project.setTechnology(
+                request.getTechnology());
+
+        project.setFundingRequired(
+                request.getFundingRequired());
+
+        project.setDescription(
+                request.getDescription());
+
+        Project savedProject =
+                projectRepository.save(project);
+
+        return convertToResponse(
+                savedProject);
     }
+
+
+    // ========================================
+    // GET ALL PROJECTS
+    // ========================================
 
     public List<ProjectResponse> getAllProjects() {
 
@@ -65,6 +99,11 @@ public class ProjectService {
                 .toList();
     }
 
+
+    // ========================================
+    // GET MY PROJECTS
+    // ========================================
+
     public List<ProjectResponse> getMyProjects(
             Authentication authentication) {
 
@@ -72,76 +111,151 @@ public class ProjectService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new RuntimeException(
+                                "User not found"));
 
-        Student student = studentRepository.findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException("Student profile not found"));
+        /*
+         * A newly registered student may not have
+         * a Student profile yet.
+         *
+         * In that case, simply return an empty list
+         * instead of throwing an HTTP 500 error.
+         */
 
-        return projectRepository.findByStudent(student)
-                .stream()
-                .map(this::convertToResponse)
-                .toList();
+        return studentRepository.findByUser(user)
+                .map(student ->
+                        projectRepository
+                                .findByStudent(student)
+                                .stream()
+                                .map(this::convertToResponse)
+                                .toList()
+                )
+                .orElseGet(List::of);
     }
 
-    public ProjectResponse getProjectById(Long id) {
 
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Project not found"));
+    // ========================================
+    // GET PROJECT BY ID
+    // ========================================
+
+    public ProjectResponse getProjectById(
+            Long id) {
+
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Project not found"));
 
         return convertToResponse(project);
     }
 
-    public ProjectResponse updateProject(Long id,
-                                         ProjectRequest request) {
 
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Project not found"));
+    // ========================================
+    // UPDATE PROJECT
+    // ========================================
 
-        project.setTitle(request.getTitle());
-        project.setProblem(request.getProblem());
-        project.setSolution(request.getSolution());
-        project.setTechnology(request.getTechnology());
-        project.setFundingRequired(request.getFundingRequired());
-        project.setDescription(request.getDescription());
+    public ProjectResponse updateProject(
+            Long id,
+            ProjectRequest request) {
 
-        Project updatedProject = projectRepository.save(project);
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Project not found"));
 
-        return convertToResponse(updatedProject);
+        project.setTitle(
+                request.getTitle());
+
+        project.setProblem(
+                request.getProblem());
+
+        project.setSolution(
+                request.getSolution());
+
+        project.setTechnology(
+                request.getTechnology());
+
+        project.setFundingRequired(
+                request.getFundingRequired());
+
+        project.setDescription(
+                request.getDescription());
+
+        Project updatedProject =
+                projectRepository.save(project);
+
+        return convertToResponse(
+                updatedProject);
     }
 
-    public String deleteProject(Long id) {
 
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Project not found"));
+    // ========================================
+    // DELETE PROJECT
+    // ========================================
+
+    public String deleteProject(
+            Long id) {
+
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Project not found"));
 
         projectRepository.delete(project);
 
         return "Project deleted successfully";
     }
 
-    private ProjectResponse convertToResponse(Project project) {
 
-        ProjectResponse response = new ProjectResponse();
+    // ========================================
+    // CONVERT ENTITY → RESPONSE
+    // ========================================
 
-        response.setId(project.getId());
+    private ProjectResponse convertToResponse(
+            Project project) {
+
+        ProjectResponse response =
+                new ProjectResponse();
+
+        response.setId(
+                project.getId());
+
         response.setStudentName(
-                project.getStudent().getUser().getFullName());
+                project.getStudent()
+                        .getUser()
+                        .getFullName());
 
         response.setStudentEmail(
-                project.getStudent().getUser().getEmail());
+                project.getStudent()
+                        .getUser()
+                        .getEmail());
 
-        response.setTitle(project.getTitle());
-        response.setProblem(project.getProblem());
-        response.setSolution(project.getSolution());
-        response.setTechnology(project.getTechnology());
-        response.setFundingRequired(project.getFundingRequired());
-        response.setStatus(project.getStatus());
-        response.setDescription(project.getDescription());
-        response.setCreatedAt(project.getCreatedAt());
+        response.setTitle(
+                project.getTitle());
+
+        response.setProblem(
+                project.getProblem());
+
+        response.setSolution(
+                project.getSolution());
+
+        response.setTechnology(
+                project.getTechnology());
+
+        response.setFundingRequired(
+                project.getFundingRequired());
+
+        response.setStatus(
+                project.getStatus());
+
+        response.setDescription(
+                project.getDescription());
+
+        response.setCreatedAt(
+                project.getCreatedAt());
 
         return response;
     }

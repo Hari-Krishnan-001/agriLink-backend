@@ -18,6 +18,10 @@ public class BusinessFirmController {
         this.businessFirmService = businessFirmService;
     }
 
+    // ========================================
+    // CREATE BUSINESS PROFILE
+    // ========================================
+
     @PostMapping
     public BusinessFirmResponse createProfile(
             @RequestBody BusinessFirmRequest request,
@@ -28,11 +32,31 @@ public class BusinessFirmController {
                 authentication);
     }
 
+
+    // ========================================
+    // GET BUSINESS PROFILE
+    // ========================================
+
     @GetMapping("/profile")
     public BusinessFirmResponse getProfile(
             Authentication authentication) {
 
         return businessFirmService.getProfile(
+                authentication);
+    }
+
+
+    // ========================================
+    // UPDATE BUSINESS PROFILE
+    // ========================================
+
+    @PutMapping("/profile")
+    public BusinessFirmResponse updateProfile(
+            @RequestBody BusinessFirmRequest request,
+            Authentication authentication) {
+
+        return businessFirmService.updateProfile(
+                request,
                 authentication);
     }
 }

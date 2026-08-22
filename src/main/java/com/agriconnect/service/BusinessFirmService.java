@@ -19,9 +19,17 @@ public class BusinessFirmService {
             BusinessFirmRepository businessFirmRepository,
             UserRepository userRepository) {
 
-        this.businessFirmRepository = businessFirmRepository;
-        this.userRepository = userRepository;
+        this.businessFirmRepository =
+                businessFirmRepository;
+
+        this.userRepository =
+                userRepository;
     }
+
+
+    // ========================================
+    // CREATE BUSINESS PROFILE
+    // ========================================
 
     public BusinessFirmResponse createProfile(
             BusinessFirmRequest request,
@@ -29,57 +37,157 @@ public class BusinessFirmService {
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository
+                .findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new RuntimeException(
+                                "User not found"));
+
+
+        // Check whether profile already exists
 
         if (businessFirmRepository.existsByUser(user)) {
+
             throw new RuntimeException(
                     "Business profile already exists");
         }
 
-        BusinessFirm businessFirm = new BusinessFirm();
+
+        // Create BusinessFirm entity
+
+        BusinessFirm businessFirm =
+                new BusinessFirm();
+
 
         businessFirm.setUser(user);
+
         businessFirm.setCompanyName(
                 request.getCompanyName());
+
         businessFirm.setIndustry(
                 request.getIndustry());
+
         businessFirm.setWebsite(
                 request.getWebsite());
+
         businessFirm.setPhone(
                 request.getPhone());
+
         businessFirm.setLocation(
                 request.getLocation());
+
         businessFirm.setDescription(
                 request.getDescription());
+
+
+        // Save
 
         BusinessFirm savedBusinessFirm =
                 businessFirmRepository.save(
                         businessFirm);
 
+
         return convertToResponse(
                 savedBusinessFirm);
     }
+
+
+    // ========================================
+    // GET BUSINESS PROFILE
+    // ========================================
 
     public BusinessFirmResponse getProfile(
             Authentication authentication) {
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
+
+        User user = userRepository
+                .findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new RuntimeException(
+                                "User not found"));
+
 
         BusinessFirm businessFirm =
-                businessFirmRepository.findByUser(user)
+                businessFirmRepository
+                        .findByUser(user)
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Business profile not found"));
 
+
         return convertToResponse(
                 businessFirm);
     }
+
+
+    // ========================================
+    // UPDATE BUSINESS PROFILE
+    // ========================================
+
+    public BusinessFirmResponse updateProfile(
+            BusinessFirmRequest request,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+
+        // Find logged-in user
+
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found"));
+
+
+        // Find existing business profile
+
+        BusinessFirm businessFirm =
+                businessFirmRepository
+                        .findByUser(user)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Business profile not found"));
+
+
+        // Update fields
+
+        businessFirm.setCompanyName(
+                request.getCompanyName());
+
+        businessFirm.setIndustry(
+                request.getIndustry());
+
+        businessFirm.setWebsite(
+                request.getWebsite());
+
+        businessFirm.setPhone(
+                request.getPhone());
+
+        businessFirm.setLocation(
+                request.getLocation());
+
+        businessFirm.setDescription(
+                request.getDescription());
+
+
+        // Save updated profile
+
+        BusinessFirm updatedBusinessFirm =
+                businessFirmRepository.save(
+                        businessFirm);
+
+
+        return convertToResponse(
+                updatedBusinessFirm);
+    }
+
+
+    // ========================================
+    // CONVERT ENTITY → RESPONSE
+    // ========================================
 
     private BusinessFirmResponse convertToResponse(
             BusinessFirm businessFirm) {
@@ -87,34 +195,46 @@ public class BusinessFirmService {
         BusinessFirmResponse response =
                 new BusinessFirmResponse();
 
+
         response.setId(
                 businessFirm.getId());
 
+
         response.setFullName(
-                businessFirm.getUser()
+                businessFirm
+                        .getUser()
                         .getFullName());
 
+
         response.setEmail(
-                businessFirm.getUser()
+                businessFirm
+                        .getUser()
                         .getEmail());
+
 
         response.setCompanyName(
                 businessFirm.getCompanyName());
 
+
         response.setIndustry(
                 businessFirm.getIndustry());
+
 
         response.setWebsite(
                 businessFirm.getWebsite());
 
+
         response.setPhone(
                 businessFirm.getPhone());
+
 
         response.setLocation(
                 businessFirm.getLocation());
 
+
         response.setDescription(
                 businessFirm.getDescription());
+
 
         return response;
     }

@@ -16,7 +16,12 @@ public class StudentController {
         this.studentService = studentService;
     }
 
-    // Create Student Profile
+
+    // ========================================
+    // CREATE STUDENT PROFILE
+    // POST /api/student
+    // ========================================
+
     @PostMapping
     public StudentResponse createStudentProfile(
             @RequestBody StudentRequest request,
@@ -28,12 +33,34 @@ public class StudentController {
         );
     }
 
-    // Get Student Profile
+
+    // ========================================
+    // GET STUDENT PROFILE
+    // GET /api/student/profile
+    // ========================================
+
     @GetMapping("/profile")
     public StudentResponse getStudentProfile(
             Authentication authentication) {
 
         return studentService.getStudentProfile(
+                authentication
+        );
+    }
+
+
+    // ========================================
+    // UPDATE STUDENT PROFILE
+    // PUT /api/student/profile
+    // ========================================
+
+    @PutMapping("/profile")
+    public StudentResponse updateStudentProfile(
+            @RequestBody StudentRequest request,
+            Authentication authentication) {
+
+        return studentService.updateStudentProfile(
+                request,
                 authentication
         );
     }
