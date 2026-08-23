@@ -5,19 +5,43 @@ import java.time.LocalDateTime;
 public class ProjectResponse {
 
     private Long id;
+
     private String studentName;
+
     private String studentEmail;
+
     private String title;
+
     private String problem;
+
     private String solution;
+
     private String technology;
+
     private Double fundingRequired;
+
     private String status;
+
     private String description;
+
+    private Long views;
+
+    private Long likes;
+
     private LocalDateTime createdAt;
+
+
+    // ========================================
+    // CONSTRUCTOR
+    // ========================================
 
     public ProjectResponse() {
     }
+
+
+    // ========================================
+    // GETTERS / SETTERS
+    // ========================================
 
     public Long getId() {
         return id;
@@ -27,21 +51,28 @@ public class ProjectResponse {
         this.id = id;
     }
 
+
     public String getStudentName() {
         return studentName;
     }
 
-    public void setStudentName(String studentName) {
+    public void setStudentName(
+            String studentName) {
+
         this.studentName = studentName;
     }
+
 
     public String getStudentEmail() {
         return studentEmail;
     }
 
-    public void setStudentEmail(String studentEmail) {
+    public void setStudentEmail(
+            String studentEmail) {
+
         this.studentEmail = studentEmail;
     }
+
 
     public String getTitle() {
         return title;
@@ -51,6 +82,7 @@ public class ProjectResponse {
         this.title = title;
     }
 
+
     public String getProblem() {
         return problem;
     }
@@ -58,6 +90,7 @@ public class ProjectResponse {
     public void setProblem(String problem) {
         this.problem = problem;
     }
+
 
     public String getSolution() {
         return solution;
@@ -67,21 +100,28 @@ public class ProjectResponse {
         this.solution = solution;
     }
 
+
     public String getTechnology() {
         return technology;
     }
 
-    public void setTechnology(String technology) {
+    public void setTechnology(
+            String technology) {
+
         this.technology = technology;
     }
+
 
     public Double getFundingRequired() {
         return fundingRequired;
     }
 
-    public void setFundingRequired(Double fundingRequired) {
+    public void setFundingRequired(
+            Double fundingRequired) {
+
         this.fundingRequired = fundingRequired;
     }
+
 
     public String getStatus() {
         return status;
@@ -91,19 +131,43 @@ public class ProjectResponse {
         this.status = status;
     }
 
+
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(
+            String description) {
+
         this.description = description;
     }
+
+
+    public Long getViews() {
+        return views;
+    }
+
+    public void setViews(Long views) {
+        this.views = views;
+    }
+
+
+    public Long getLikes() {
+        return likes;
+    }
+
+    public void setLikes(Long likes) {
+        this.likes = likes;
+    }
+
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(
+            LocalDateTime createdAt) {
+
         this.createdAt = createdAt;
     }
 }

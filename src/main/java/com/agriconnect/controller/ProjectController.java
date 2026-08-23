@@ -18,6 +18,12 @@ public class ProjectController {
         this.projectService = projectService;
     }
 
+
+    // ========================================
+    // CREATE PROJECT
+    // POST /api/projects
+    // ========================================
+
     @PostMapping
     public ProjectResponse createProject(
             @RequestBody ProjectRequest request,
@@ -25,8 +31,15 @@ public class ProjectController {
 
         return projectService.createProject(
                 request,
-                authentication);
+                authentication
+        );
     }
+
+
+    // ========================================
+    // GET ALL PROJECTS
+    // GET /api/projects
+    // ========================================
 
     @GetMapping
     public List<ProjectResponse> getAllProjects() {
@@ -34,13 +47,26 @@ public class ProjectController {
         return projectService.getAllProjects();
     }
 
+
+    // ========================================
+    // GET MY PROJECTS
+    // GET /api/projects/my-projects
+    // ========================================
+
     @GetMapping("/my-projects")
     public List<ProjectResponse> getMyProjects(
             Authentication authentication) {
 
         return projectService.getMyProjects(
-                authentication);
+                authentication
+        );
     }
+
+
+    // ========================================
+    // GET PROJECT BY ID
+    // GET /api/projects/{id}
+    // ========================================
 
     @GetMapping("/{id}")
     public ProjectResponse getProjectById(
@@ -49,20 +75,90 @@ public class ProjectController {
         return projectService.getProjectById(id);
     }
 
+
+    // ========================================
+    // UPDATE PROJECT
+    // PUT /api/projects/{id}
+    // ========================================
+
     @PutMapping("/{id}")
     public ProjectResponse updateProject(
             @PathVariable Long id,
-            @RequestBody ProjectRequest request) {
+            @RequestBody ProjectRequest request,
+            Authentication authentication) {
 
         return projectService.updateProject(
                 id,
-                request);
+                request,
+                authentication
+        );
     }
+
+
+    // ========================================
+    // DELETE PROJECT
+    // DELETE /api/projects/{id}
+    // ========================================
 
     @DeleteMapping("/{id}")
     public String deleteProject(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return projectService.deleteProject(id);
+        return projectService.deleteProject(
+                id,
+                authentication
+        );
+    }
+
+
+    // ========================================
+    // ADD PROJECT VIEW
+    // POST /api/projects/{id}/view
+    // ========================================
+
+    @PostMapping("/{id}/view")
+    public ProjectResponse addProjectView(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return projectService.addProjectView(
+                id,
+                authentication
+        );
+    }
+
+
+    // ========================================
+    // LIKE / UNLIKE PROJECT
+    // POST /api/projects/{id}/like
+    // ========================================
+
+    @PostMapping("/{id}/like")
+    public ProjectResponse toggleLike(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return projectService.toggleLike(
+                id,
+                authentication
+        );
+    }
+
+
+    // ========================================
+    // CHECK USER LIKE
+    // GET /api/projects/{id}/liked
+    // ========================================
+
+    @GetMapping("/{id}/liked")
+    public boolean hasUserLiked(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return projectService.hasUserLiked(
+                id,
+                authentication
+        );
     }
 }

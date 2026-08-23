@@ -3,13 +3,17 @@ package com.agriconnect.service;
 import com.agriconnect.dto.ProjectRequest;
 import com.agriconnect.dto.ProjectResponse;
 import com.agriconnect.entity.Project;
+import com.agriconnect.entity.ProjectLike;
 import com.agriconnect.entity.Student;
 import com.agriconnect.entity.User;
+import com.agriconnect.repository.ProjectLikeRepository;
 import com.agriconnect.repository.ProjectRepository;
 import com.agriconnect.repository.StudentRepository;
 import com.agriconnect.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -17,6 +21,7 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectLikeRepository projectLikeRepository;
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
 
@@ -27,10 +32,12 @@ public class ProjectService {
 
     public ProjectService(
             ProjectRepository projectRepository,
+            ProjectLikeRepository projectLikeRepository,
             StudentRepository studentRepository,
             UserRepository userRepository) {
 
         this.projectRepository = projectRepository;
+        this.projectLikeRepository = projectLikeRepository;
         this.studentRepository = studentRepository;
         this.userRepository = userRepository;
     }
@@ -46,44 +53,50 @@ public class ProjectService {
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
+        User user = getUser(email);
 
         Student student =
                 studentRepository.findByUser(user)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student profile not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Student profile not found"
+                                ));
 
         Project project = new Project();
 
         project.setStudent(student);
 
         project.setTitle(
-                request.getTitle());
+                request.getTitle()
+        );
 
         project.setProblem(
-                request.getProblem());
+                request.getProblem()
+        );
 
         project.setSolution(
-                request.getSolution());
+                request.getSolution()
+        );
 
         project.setTechnology(
-                request.getTechnology());
+                request.getTechnology()
+        );
 
         project.setFundingRequired(
-                request.getFundingRequired());
+                request.getFundingRequired()
+        );
 
         project.setDescription(
-                request.getDescription());
+                request.getDescription()
+        );
 
         Project savedProject =
                 projectRepository.save(project);
 
         return convertToResponse(
-                savedProject);
+                savedProject
+        );
     }
 
 
@@ -109,18 +122,7 @@ public class ProjectService {
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
-
-        /*
-         * A newly registered student may not have
-         * a Student profile yet.
-         *
-         * In that case, simply return an empty list
-         * instead of throwing an HTTP 500 error.
-         */
+        User user = getUser(email);
 
         return studentRepository.findByUser(user)
                 .map(student ->
@@ -144,8 +146,10 @@ public class ProjectService {
         Project project =
                 projectRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Project not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
 
         return convertToResponse(project);
     }
@@ -157,37 +161,52 @@ public class ProjectService {
 
     public ProjectResponse updateProject(
             Long id,
-            ProjectRequest request) {
+            ProjectRequest request,
+            Authentication authentication) {
 
         Project project =
                 projectRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Project not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
+
+        verifyProjectOwnership(
+                project,
+                authentication
+        );
 
         project.setTitle(
-                request.getTitle());
+                request.getTitle()
+        );
 
         project.setProblem(
-                request.getProblem());
+                request.getProblem()
+        );
 
         project.setSolution(
-                request.getSolution());
+                request.getSolution()
+        );
 
         project.setTechnology(
-                request.getTechnology());
+                request.getTechnology()
+        );
 
         project.setFundingRequired(
-                request.getFundingRequired());
+                request.getFundingRequired()
+        );
 
         project.setDescription(
-                request.getDescription());
+                request.getDescription()
+        );
 
         Project updatedProject =
                 projectRepository.save(project);
 
         return convertToResponse(
-                updatedProject);
+                updatedProject
+        );
     }
 
 
@@ -196,17 +215,232 @@ public class ProjectService {
     // ========================================
 
     public String deleteProject(
-            Long id) {
+            Long id,
+            Authentication authentication) {
 
         Project project =
                 projectRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Project not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
+
+        verifyProjectOwnership(
+                project,
+                authentication
+        );
 
         projectRepository.delete(project);
 
         return "Project deleted successfully";
+    }
+
+
+    // ========================================
+    // ADD PROJECT VIEW
+    // ========================================
+
+    public ProjectResponse addProjectView(
+            Long id,
+            Authentication authentication) {
+
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
+
+        /*
+         * Project owner should not increase
+         * their own project view count.
+         */
+
+        if (authentication != null) {
+
+            String email =
+                    authentication.getName();
+
+            String ownerEmail =
+                    project.getStudent()
+                            .getUser()
+                            .getEmail();
+
+            if (!email.equals(ownerEmail)) {
+
+                project.setViews(
+                        project.getViews() + 1
+                );
+
+                project =
+                        projectRepository.save(project);
+            }
+        }
+
+        return convertToResponse(project);
+    }
+
+
+    // ========================================
+    // LIKE / UNLIKE PROJECT
+    // ========================================
+
+    public ProjectResponse toggleLike(
+            Long id,
+            Authentication authentication) {
+
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
+
+        String email =
+                authentication.getName();
+
+        User user = getUser(email);
+
+        /*
+         * Check whether this user has already
+         * liked this project.
+         */
+
+        var existingLike =
+                projectLikeRepository
+                        .findByProjectAndUser(
+                                project,
+                                user
+                        );
+
+        if (existingLike.isPresent()) {
+
+            // ====================================
+            // UNLIKE
+            // ====================================
+
+            projectLikeRepository.delete(
+                    existingLike.get()
+            );
+
+            long currentLikes =
+                    project.getLikes() == null
+                            ? 0L
+                            : project.getLikes();
+
+            project.setLikes(
+                    Math.max(
+                            0L,
+                            currentLikes - 1
+                    )
+            );
+
+        } else {
+
+            // ====================================
+            // LIKE
+            // ====================================
+
+            ProjectLike projectLike =
+                    new ProjectLike();
+
+            projectLike.setProject(project);
+            projectLike.setUser(user);
+
+            projectLikeRepository.save(
+                    projectLike
+            );
+
+            long currentLikes =
+                    project.getLikes() == null
+                            ? 0L
+                            : project.getLikes();
+
+            project.setLikes(
+                    currentLikes + 1
+            );
+        }
+
+        Project updatedProject =
+                projectRepository.save(project);
+
+        return convertToResponse(
+                updatedProject
+        );
+    }
+
+
+    // ========================================
+    // CHECK WHETHER USER LIKED PROJECT
+    // ========================================
+
+    public boolean hasUserLiked(
+            Long id,
+            Authentication authentication) {
+
+        Project project =
+                projectRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Project not found"
+                                ));
+
+        String email =
+                authentication.getName();
+
+        User user = getUser(email);
+
+        return projectLikeRepository
+                .existsByProjectAndUser(
+                        project,
+                        user
+                );
+    }
+
+
+    // ========================================
+    // GET USER
+    // ========================================
+
+    private User getUser(String email) {
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"
+                        ));
+    }
+
+
+    // ========================================
+    // VERIFY PROJECT OWNERSHIP
+    // ========================================
+
+    private void verifyProjectOwnership(
+            Project project,
+            Authentication authentication) {
+
+        String loggedInEmail =
+                authentication.getName();
+
+        String projectOwnerEmail =
+                project.getStudent()
+                        .getUser()
+                        .getEmail();
+
+        if (!loggedInEmail.equals(
+                projectOwnerEmail)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You are not allowed to modify this project"
+            );
+        }
     }
 
 
@@ -221,41 +455,60 @@ public class ProjectService {
                 new ProjectResponse();
 
         response.setId(
-                project.getId());
+                project.getId()
+        );
 
         response.setStudentName(
                 project.getStudent()
                         .getUser()
-                        .getFullName());
+                        .getFullName()
+        );
 
         response.setStudentEmail(
                 project.getStudent()
                         .getUser()
-                        .getEmail());
+                        .getEmail()
+        );
 
         response.setTitle(
-                project.getTitle());
+                project.getTitle()
+        );
 
         response.setProblem(
-                project.getProblem());
+                project.getProblem()
+        );
 
         response.setSolution(
-                project.getSolution());
+                project.getSolution()
+        );
 
         response.setTechnology(
-                project.getTechnology());
+                project.getTechnology()
+        );
 
         response.setFundingRequired(
-                project.getFundingRequired());
+                project.getFundingRequired()
+        );
 
         response.setStatus(
-                project.getStatus());
+                project.getStatus()
+        );
 
         response.setDescription(
-                project.getDescription());
+                project.getDescription()
+        );
+
+        response.setViews(
+                project.getViews()
+        );
+
+        response.setLikes(
+                project.getLikes()
+        );
 
         response.setCreatedAt(
-                project.getCreatedAt());
+                project.getCreatedAt()
+        );
 
         return response;
     }
