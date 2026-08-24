@@ -10,6 +10,7 @@ import com.agriconnect.repository.ProjectLikeRepository;
 import com.agriconnect.repository.ProjectRepository;
 import com.agriconnect.repository.StudentRepository;
 import com.agriconnect.repository.UserRepository;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -95,7 +96,8 @@ public class ProjectService {
                 projectRepository.save(project);
 
         return convertToResponse(
-                savedProject
+                savedProject,
+                authentication
         );
     }
 
@@ -104,11 +106,16 @@ public class ProjectService {
     // GET ALL PROJECTS
     // ========================================
 
-    public List<ProjectResponse> getAllProjects() {
+    public List<ProjectResponse> getAllProjects(
+            Authentication authentication) {
 
         return projectRepository.findAll()
                 .stream()
-                .map(this::convertToResponse)
+                .map(project ->
+                        convertToResponse(
+                                project,
+                                authentication
+                        ))
                 .toList();
     }
 
@@ -129,7 +136,11 @@ public class ProjectService {
                         projectRepository
                                 .findByStudent(student)
                                 .stream()
-                                .map(this::convertToResponse)
+                                .map(project ->
+                                        convertToResponse(
+                                                project,
+                                                authentication
+                                        ))
                                 .toList()
                 )
                 .orElseGet(List::of);
@@ -141,7 +152,8 @@ public class ProjectService {
     // ========================================
 
     public ProjectResponse getProjectById(
-            Long id) {
+            Long id,
+            Authentication authentication) {
 
         Project project =
                 projectRepository.findById(id)
@@ -151,7 +163,10 @@ public class ProjectService {
                                         "Project not found"
                                 ));
 
-        return convertToResponse(project);
+        return convertToResponse(
+                project,
+                authentication
+        );
     }
 
 
@@ -205,7 +220,8 @@ public class ProjectService {
                 projectRepository.save(project);
 
         return convertToResponse(
-                updatedProject
+                updatedProject,
+                authentication
         );
     }
 
@@ -270,8 +286,13 @@ public class ProjectService {
 
             if (!email.equals(ownerEmail)) {
 
+                Long currentViews =
+                        project.getViews() == null
+                                ? 0L
+                                : project.getViews();
+
                 project.setViews(
-                        project.getViews() + 1
+                        currentViews + 1
                 );
 
                 project =
@@ -279,7 +300,10 @@ public class ProjectService {
             }
         }
 
-        return convertToResponse(project);
+        return convertToResponse(
+                project,
+                authentication
+        );
     }
 
 
@@ -348,6 +372,7 @@ public class ProjectService {
                     new ProjectLike();
 
             projectLike.setProject(project);
+
             projectLike.setUser(user);
 
             projectLikeRepository.save(
@@ -368,7 +393,8 @@ public class ProjectService {
                 projectRepository.save(project);
 
         return convertToResponse(
-                updatedProject
+                updatedProject,
+                authentication
         );
     }
 
@@ -449,7 +475,8 @@ public class ProjectService {
     // ========================================
 
     private ProjectResponse convertToResponse(
-            Project project) {
+            Project project,
+            Authentication authentication) {
 
         ProjectResponse response =
                 new ProjectResponse();
@@ -469,6 +496,32 @@ public class ProjectService {
                         .getUser()
                         .getEmail()
         );
+
+
+        // ====================================
+        // CHECK PROJECT OWNER
+        // ====================================
+
+        boolean isOwner = false;
+
+        if (authentication != null) {
+
+            String loggedInEmail =
+                    authentication.getName();
+
+            String projectOwnerEmail =
+                    project.getStudent()
+                            .getUser()
+                            .getEmail();
+
+            isOwner =
+                    loggedInEmail.equals(
+                            projectOwnerEmail
+                    );
+        }
+
+        response.setOwner(isOwner);
+
 
         response.setTitle(
                 project.getTitle()

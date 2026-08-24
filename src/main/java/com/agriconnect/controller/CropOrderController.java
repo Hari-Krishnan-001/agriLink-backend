@@ -20,6 +20,12 @@ public class CropOrderController {
         this.cropOrderService = cropOrderService;
     }
 
+
+    // ==========================================
+    // PLACE ORDER
+    // POST /api/orders
+    // ==========================================
+
     @PostMapping
     public CropOrderResponse placeOrder(
             @RequestBody CropOrderRequest request,
@@ -30,6 +36,12 @@ public class CropOrderController {
                 authentication);
     }
 
+
+    // ==========================================
+    // GET MY ORDERS
+    // GET /api/orders/my-orders
+    // ==========================================
+
     @GetMapping("/my-orders")
     public List<CropOrderResponse> getMyOrders(
             Authentication authentication) {
@@ -37,6 +49,12 @@ public class CropOrderController {
         return cropOrderService.getMyOrders(
                 authentication);
     }
+
+
+    // ==========================================
+    // GET FARMER ORDERS
+    // GET /api/orders/farmer
+    // ==========================================
 
     @GetMapping("/farmer")
     public List<CropOrderResponse> getFarmerOrders(
@@ -46,17 +64,35 @@ public class CropOrderController {
                 authentication);
     }
 
+
+    // ==========================================
+    // APPROVE ORDER
+    // PUT /api/orders/{id}/approve
+    // ==========================================
+
     @PutMapping("/{id}/approve")
     public CropOrderResponse approveOrder(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return cropOrderService.approveOrder(id);
+        return cropOrderService.approveOrder(
+                id,
+                authentication);
     }
+
+
+    // ==========================================
+    // REJECT ORDER
+    // PUT /api/orders/{id}/reject
+    // ==========================================
 
     @PutMapping("/{id}/reject")
     public CropOrderResponse rejectOrder(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return cropOrderService.rejectOrder(id);
+        return cropOrderService.rejectOrder(
+                id,
+                authentication);
     }
 }

@@ -10,6 +10,12 @@ public class ProjectResponse {
 
     private String studentEmail;
 
+    // ========================================
+    // OWNER
+    // ========================================
+
+    private boolean owner;
+
     private String title;
 
     private String problem;
@@ -74,6 +80,19 @@ public class ProjectResponse {
     }
 
 
+    // ========================================
+    // OWNER GETTER / SETTER
+    // ========================================
+
+    public boolean isOwner() {
+        return owner;
+    }
+
+    public void setOwner(boolean owner) {
+        this.owner = owner;
+    }
+
+
     public String getTitle() {
         return title;
     }
@@ -87,7 +106,9 @@ public class ProjectResponse {
         return problem;
     }
 
-    public void setProblem(String problem) {
+    public void setProblem(
+            String problem) {
+
         this.problem = problem;
     }
 
@@ -96,7 +117,9 @@ public class ProjectResponse {
         return solution;
     }
 
-    public void setSolution(String solution) {
+    public void setSolution(
+            String solution) {
+
         this.solution = solution;
     }
 
@@ -127,7 +150,9 @@ public class ProjectResponse {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(
+            String status) {
+
         this.status = status;
     }
 
@@ -147,7 +172,9 @@ public class ProjectResponse {
         return views;
     }
 
-    public void setViews(Long views) {
+    public void setViews(
+            Long views) {
+
         this.views = views;
     }
 
@@ -156,7 +183,9 @@ public class ProjectResponse {
         return likes;
     }
 
-    public void setLikes(Long likes) {
+    public void setLikes(
+            Long likes) {
+
         this.likes = likes;
     }
 

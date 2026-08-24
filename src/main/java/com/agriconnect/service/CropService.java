@@ -8,8 +8,10 @@ import com.agriconnect.entity.User;
 import com.agriconnect.repository.CropRepository;
 import com.agriconnect.repository.FarmerRepository;
 import com.agriconnect.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,164 +22,288 @@ public class CropService {
     private final UserRepository userRepository;
     private final FarmerRepository farmerRepository;
 
-    public CropService(CropRepository cropRepository,
-                       UserRepository userRepository,
-                       FarmerRepository farmerRepository) {
+    public CropService(
+            CropRepository cropRepository,
+            UserRepository userRepository,
+            FarmerRepository farmerRepository) {
 
         this.cropRepository = cropRepository;
         this.userRepository = userRepository;
         this.farmerRepository = farmerRepository;
     }
 
-    // CREATE CROP
-    public CropResponse createCrop(CropRequest request,
-                                   Authentication authentication) {
 
-        Farmer farmer = getAuthenticatedFarmer(authentication);
+    // ========================================
+    // CREATE CROP
+    // ========================================
+
+    public CropResponse createCrop(
+            CropRequest request,
+            Authentication authentication) {
+
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
 
         Crop crop = new Crop();
 
         crop.setFarmer(farmer);
-        crop.setCropName(request.getCropName());
-        crop.setCategory(request.getCategory());
-        crop.setQuantity(request.getQuantity());
-        crop.setUnit(request.getUnit());
-        crop.setPricePerUnit(request.getPricePerUnit());
-        crop.setDescription(request.getDescription());
-        crop.setHarvestDate(request.getHarvestDate());
+
+        crop.setCropName(
+                request.getCropName());
+
+        crop.setCategory(
+                request.getCategory());
+
+        crop.setQuantity(
+                request.getQuantity());
+
+        crop.setUnit(
+                request.getUnit());
+
+        crop.setPricePerUnit(
+                request.getPricePerUnit());
+
+        crop.setDescription(
+                request.getDescription());
+
+        crop.setHarvestDate(
+                request.getHarvestDate());
 
         if (request.getAvailable() != null) {
-            crop.setAvailable(request.getAvailable());
+
+            crop.setAvailable(
+                    request.getAvailable());
+
         } else {
+
             crop.setAvailable(true);
         }
 
-        Crop savedCrop = cropRepository.save(crop);
+        Crop savedCrop =
+                cropRepository.save(crop);
 
         return convertToResponse(savedCrop);
     }
 
+
+    // ========================================
     // GET MY CROPS
-    public List<CropResponse> getMyCrops(Authentication authentication) {
+    // ========================================
 
-        Farmer farmer = getAuthenticatedFarmer(authentication);
+    public List<CropResponse> getMyCrops(
+            Authentication authentication) {
 
-        return cropRepository.findByFarmer(farmer)
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
+
+        return cropRepository
+                .findByFarmer(farmer)
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
     }
 
+
+    // ========================================
     // GET ALL AVAILABLE CROPS
+    // ========================================
+
     public List<CropResponse> getAvailableCrops() {
 
-        return cropRepository.findByAvailableTrue()
+        return cropRepository
+                .findByAvailableTrue()
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
     }
 
+
+    // ========================================
     // GET SINGLE CROP
+    // ========================================
+
     public CropResponse getCropById(Long id) {
 
-        Crop crop = cropRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Crop not found."));
+        Crop crop =
+                cropRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Crop not found"
+                                ));
 
         return convertToResponse(crop);
     }
 
+
+    // ========================================
     // UPDATE CROP
-    public CropResponse updateCrop(Long id,
-                                   CropRequest request,
-                                   Authentication authentication) {
+    // ========================================
 
-        Farmer farmer = getAuthenticatedFarmer(authentication);
+    public CropResponse updateCrop(
+            Long id,
+            CropRequest request,
+            Authentication authentication) {
 
-        Crop crop = cropRepository.findByIdAndFarmer(id, farmer)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Crop not found or you are not authorized to modify it."
-                        ));
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
 
-        crop.setCropName(request.getCropName());
-        crop.setCategory(request.getCategory());
-        crop.setQuantity(request.getQuantity());
-        crop.setUnit(request.getUnit());
-        crop.setPricePerUnit(request.getPricePerUnit());
-        crop.setDescription(request.getDescription());
-        crop.setHarvestDate(request.getHarvestDate());
+        Crop crop =
+                cropRepository
+                        .findByIdAndFarmer(id, farmer)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Crop not found or you are not authorized to modify it"
+                                ));
+
+        crop.setCropName(
+                request.getCropName());
+
+        crop.setCategory(
+                request.getCategory());
+
+        crop.setQuantity(
+                request.getQuantity());
+
+        crop.setUnit(
+                request.getUnit());
+
+        crop.setPricePerUnit(
+                request.getPricePerUnit());
+
+        crop.setDescription(
+                request.getDescription());
+
+        crop.setHarvestDate(
+                request.getHarvestDate());
 
         if (request.getAvailable() != null) {
-            crop.setAvailable(request.getAvailable());
+
+            crop.setAvailable(
+                    request.getAvailable());
         }
 
-        Crop updatedCrop = cropRepository.save(crop);
+        Crop updatedCrop =
+                cropRepository.save(crop);
 
         return convertToResponse(updatedCrop);
     }
 
-    // DELETE CROP - SOFT DELETE
-    public String deleteCrop(Long id,
-                             Authentication authentication) {
 
-        Farmer farmer = getAuthenticatedFarmer(authentication);
+    // ========================================
+    // DELETE CROP
+    // ========================================
+    // SOFT DELETE
+    // ========================================
 
-        Crop crop = cropRepository.findByIdAndFarmer(id, farmer)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Crop not found or you are not authorized to remove it."
-                        ));
+    public String deleteCrop(
+            Long id,
+            Authentication authentication) {
+
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
+
+        Crop crop =
+                cropRepository
+                        .findByIdAndFarmer(id, farmer)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Crop not found or you are not authorized to remove it"
+                                ));
 
         /*
-         * Do not physically delete the crop.
+         * We do not physically delete the crop.
          *
-         * A crop may already be referenced by an order in crop_orders.
-         * Physically deleting it would violate the foreign key constraint.
+         * A crop may already be referenced by
+         * an order.
          *
-         * Instead, mark it as unavailable.
+         * Therefore, mark it unavailable instead.
          */
+
         crop.setAvailable(false);
 
         cropRepository.save(crop);
 
-        return "Crop removed from marketplace successfully.";
+        return "Crop removed from marketplace successfully";
     }
 
+
+    // ========================================
     // GET AUTHENTICATED FARMER
-    private Farmer getAuthenticatedFarmer(Authentication authentication) {
+    // ========================================
 
-        String email = authentication.getName();
+    private Farmer getAuthenticatedFarmer(
+            Authentication authentication) {
 
-        User user = userRepository.findByEmail(email)
+        if (authentication == null ||
+                authentication.getName() == null) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication required"
+            );
+        }
+
+        String email =
+                authentication.getName();
+
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "User not found"
+                                ));
+
+        return farmerRepository
+                .findByUser(user)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found."));
-
-        return farmerRepository.findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
                                 "Farmer profile not found. Please create a farmer profile first."
                         ));
     }
 
-    // CONVERT ENTITY TO RESPONSE
-    private CropResponse convertToResponse(Crop crop) {
 
-        Farmer farmer = crop.getFarmer();
-        User user = farmer.getUser();
+    // ========================================
+    // CONVERT ENTITY → RESPONSE
+    // ========================================
+
+    private CropResponse convertToResponse(
+            Crop crop) {
+
+        Farmer farmer =
+                crop.getFarmer();
+
+        User user =
+                farmer.getUser();
 
         return new CropResponse(
+
                 crop.getId(),
+
                 user.getFullName(),
+
                 user.getEmail(),
+
                 crop.getCropName(),
+
                 crop.getCategory(),
+
                 crop.getQuantity(),
+
                 crop.getUnit(),
+
                 crop.getPricePerUnit(),
+
                 crop.getDescription(),
+
                 crop.getHarvestDate(),
+
                 crop.getAvailable(),
+
                 crop.getCreatedAt()
         );
     }

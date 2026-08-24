@@ -42,9 +42,12 @@ public class ProjectController {
     // ========================================
 
     @GetMapping
-    public List<ProjectResponse> getAllProjects() {
+    public List<ProjectResponse> getAllProjects(
+            Authentication authentication) {
 
-        return projectService.getAllProjects();
+        return projectService.getAllProjects(
+                authentication
+        );
     }
 
 
@@ -70,9 +73,13 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ProjectResponse getProjectById(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return projectService.getProjectById(id);
+        return projectService.getProjectById(
+                id,
+                authentication
+        );
     }
 
 

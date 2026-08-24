@@ -2,10 +2,20 @@ package com.agriconnect.service;
 
 import com.agriconnect.dto.CropOrderRequest;
 import com.agriconnect.dto.CropOrderResponse;
-import com.agriconnect.entity.*;
-import com.agriconnect.repository.*;
+import com.agriconnect.entity.BusinessFirm;
+import com.agriconnect.entity.Crop;
+import com.agriconnect.entity.CropOrder;
+import com.agriconnect.entity.Farmer;
+import com.agriconnect.entity.User;
+import com.agriconnect.repository.BusinessFirmRepository;
+import com.agriconnect.repository.CropOrderRepository;
+import com.agriconnect.repository.CropRepository;
+import com.agriconnect.repository.FarmerRepository;
+import com.agriconnect.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -32,6 +42,7 @@ public class CropOrderService {
         this.farmerRepository = farmerRepository;
     }
 
+
     // ==========================================
     // PLACE ORDER
     // ==========================================
@@ -40,55 +51,76 @@ public class CropOrderService {
             CropOrderRequest request,
             Authentication authentication) {
 
-        // Validate crop ID
         if (request.getCropId() == null) {
-            throw new RuntimeException(
-                    "Crop ID is required.");
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Crop ID is required."
+            );
         }
 
-        // Validate quantity
         if (request.getQuantity() == null ||
                 request.getQuantity() <= 0) {
 
-            throw new RuntimeException(
-                    "Order quantity must be greater than zero.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Order quantity must be greater than zero."
+            );
         }
 
-        String email = authentication.getName();
+        User user =
+                getAuthenticatedUser(authentication);
 
-        // Find logged-in user
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
-
-        // Find business profile
         BusinessFirm businessFirm =
-                businessFirmRepository.findByUser(user)
+                businessFirmRepository
+                        .findByUser(user)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Business profile not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Business profile not found."
+                                ));
 
-        // Find crop
-        Crop crop = cropRepository.findById(
-                        request.getCropId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Crop not found"));
+        Crop crop =
+                cropRepository
+                        .findById(request.getCropId())
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Crop not found."
+                                ));
 
-        // Check availability
-        if (!Boolean.TRUE.equals(crop.getAvailable())) {
+        // Prevent a farmer from ordering
+        // their own crop through a business account
+        if (crop.getFarmer() != null &&
+                crop.getFarmer()
+                        .getUser()
+                        .getId()
+                        .equals(user.getId())) {
 
-            throw new RuntimeException(
-                    "This crop is currently unavailable.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "You cannot place an order for your own crop."
+            );
         }
 
-        // Check requested quantity
-        if (request.getQuantity() > crop.getQuantity()) {
+        if (!Boolean.TRUE.equals(
+                crop.getAvailable())) {
 
-            throw new RuntimeException(
-                    "Requested quantity exceeds available quantity.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This crop is currently unavailable."
+            );
         }
+
+        if (request.getQuantity()
+                > crop.getQuantity()) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Requested quantity exceeds available quantity."
+            );
+        }
+
 
         // ==========================================
         // CREATE ORDER
@@ -98,41 +130,45 @@ public class CropOrderService {
 
         order.setCrop(crop);
 
-        order.setBusinessFirm(businessFirm);
+        order.setBusinessFirm(
+                businessFirm);
 
-        order.setQuantity(request.getQuantity());
+        order.setQuantity(
+                request.getQuantity());
 
-        // Calculate total price using
-        // the price stored in the database
         order.setTotalPrice(
                 request.getQuantity()
                         * crop.getPricePerUnit());
+
 
         // ==========================================
         // REDUCE CROP QUANTITY
         // ==========================================
 
-        crop.setQuantity(
+        double remainingQuantity =
                 crop.getQuantity()
-                        - request.getQuantity());
+                        - request.getQuantity();
 
-        // If no quantity remains
-        // mark crop as unavailable
-        if (crop.getQuantity() <= 0) {
+        if (remainingQuantity <= 0) {
 
             crop.setQuantity(0.0);
 
             crop.setAvailable(false);
+
+        } else {
+
+            crop.setQuantity(
+                    remainingQuantity);
         }
 
-        // Save updated crop
+
         cropRepository.save(crop);
 
-        // Save order
         CropOrder savedOrder =
                 cropOrderRepository.save(order);
 
-        return convertToResponse(savedOrder);
+        return convertToResponse(
+                savedOrder);
     }
 
 
@@ -143,17 +179,17 @@ public class CropOrderService {
     public List<CropOrderResponse> getMyOrders(
             Authentication authentication) {
 
-        User user = userRepository
-                .findByEmail(authentication.getName())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
+        User user =
+                getAuthenticatedUser(authentication);
 
         BusinessFirm businessFirm =
-                businessFirmRepository.findByUser(user)
+                businessFirmRepository
+                        .findByUser(user)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Business profile not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Business profile not found."
+                                ));
 
         return cropOrderRepository
                 .findByBusinessFirm(businessFirm)
@@ -170,17 +206,17 @@ public class CropOrderService {
     public List<CropOrderResponse> getFarmerOrders(
             Authentication authentication) {
 
-        User user = userRepository
-                .findByEmail(authentication.getName())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"));
+        User user =
+                getAuthenticatedUser(authentication);
 
-        Farmer farmer = farmerRepository
-                .findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Farmer profile not found"));
+        Farmer farmer =
+                farmerRepository
+                        .findByUser(user)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Farmer profile not found."
+                                ));
 
         return cropOrderRepository
                 .findByCropFarmer(farmer)
@@ -194,19 +230,33 @@ public class CropOrderService {
     // APPROVE ORDER
     // ==========================================
 
-    public CropOrderResponse approveOrder(Long id) {
+    public CropOrderResponse approveOrder(
+            Long id,
+            Authentication authentication) {
+
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
 
         CropOrder order =
-                cropOrderRepository.findById(id)
+                cropOrderRepository
+                        .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Order not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Order not found."
+                                ));
 
-        // Only pending orders can be approved
-        if (!"PENDING".equals(order.getStatus())) {
+        verifyFarmerOwnsOrder(
+                order,
+                farmer);
 
-            throw new RuntimeException(
-                    "Only pending orders can be approved.");
+        if (!"PENDING".equals(
+                order.getStatus())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only pending orders can be approved."
+            );
         }
 
         order.setStatus("APPROVED");
@@ -214,7 +264,8 @@ public class CropOrderService {
         CropOrder savedOrder =
                 cropOrderRepository.save(order);
 
-        return convertToResponse(savedOrder);
+        return convertToResponse(
+                savedOrder);
     }
 
 
@@ -222,49 +273,139 @@ public class CropOrderService {
     // REJECT ORDER
     // ==========================================
 
-    public CropOrderResponse rejectOrder(Long id) {
+    public CropOrderResponse rejectOrder(
+            Long id,
+            Authentication authentication) {
+
+        Farmer farmer =
+                getAuthenticatedFarmer(authentication);
 
         CropOrder order =
-                cropOrderRepository.findById(id)
+                cropOrderRepository
+                        .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Order not found"));
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Order not found."
+                                ));
 
-        // Only pending orders can be rejected
-        if (!"PENDING".equals(order.getStatus())) {
+        verifyFarmerOwnsOrder(
+                order,
+                farmer);
 
-            throw new RuntimeException(
-                    "Only pending orders can be rejected.");
+        if (!"PENDING".equals(
+                order.getStatus())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only pending orders can be rejected."
+            );
         }
+
 
         // ==========================================
         // RESTORE CROP QUANTITY
         // ==========================================
 
-        Crop crop = order.getCrop();
+        Crop crop =
+                order.getCrop();
 
         crop.setQuantity(
                 crop.getQuantity()
                         + order.getQuantity());
 
-        // Make the crop available again
-        // because rejected quantity is returned
         crop.setAvailable(true);
 
         cropRepository.save(crop);
 
-        // Mark order rejected
+
+        // ==========================================
+        // MARK ORDER REJECTED
+        // ==========================================
+
         order.setStatus("REJECTED");
 
         CropOrder savedOrder =
                 cropOrderRepository.save(order);
 
-        return convertToResponse(savedOrder);
+        return convertToResponse(
+                savedOrder);
     }
 
 
     // ==========================================
-    // CONVERT ENTITY TO RESPONSE
+    // GET AUTHENTICATED USER
+    // ==========================================
+
+    private User getAuthenticatedUser(
+            Authentication authentication) {
+
+        if (authentication == null ||
+                authentication.getName() == null) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication required."
+            );
+        }
+
+        return userRepository
+                .findByEmail(
+                        authentication.getName())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found."
+                        ));
+    }
+
+
+    // ==========================================
+    // GET AUTHENTICATED FARMER
+    // ==========================================
+
+    private Farmer getAuthenticatedFarmer(
+            Authentication authentication) {
+
+        User user =
+                getAuthenticatedUser(
+                        authentication);
+
+        return farmerRepository
+                .findByUser(user)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Farmer profile not found."
+                        ));
+    }
+
+
+    // ==========================================
+    // VERIFY ORDER OWNERSHIP
+    // ==========================================
+
+    private void verifyFarmerOwnsOrder(
+            CropOrder order,
+            Farmer farmer) {
+
+        if (order.getCrop() == null ||
+                order.getCrop().getFarmer() == null ||
+                !order.getCrop()
+                        .getFarmer()
+                        .getId()
+                        .equals(farmer.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You are not authorized to manage this order."
+            );
+        }
+    }
+
+
+    // ==========================================
+    // CONVERT ENTITY → RESPONSE
     // ==========================================
 
     private CropOrderResponse convertToResponse(
