@@ -7,6 +7,7 @@ import com.agriconnect.entity.User;
 import com.agriconnect.exception.UserAlreadyExistsException;
 import com.agriconnect.repository.UserRepository;
 import com.agriconnect.security.JwtService;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,47 +18,123 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+
+    // ========================================
+    // CONSTRUCTOR
+    // ========================================
+
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
+    ) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
-    // ---------------- REGISTER ----------------
-    public User registerUser(UserRequest request) {
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("Email already exists.");
+    // ========================================
+    // REGISTER
+    // ========================================
+
+    public User registerUser(
+            UserRequest request
+    ) {
+
+        if (
+                userRepository
+                        .findByEmail(request.getEmail())
+                        .isPresent()
+        ) {
+
+            throw new UserAlreadyExistsException(
+                    "Email already exists."
+            );
         }
 
-        if (userRepository.findByPhone(request.getPhone()).isPresent()) {
-            throw new UserAlreadyExistsException("Phone number already exists.");
+
+        if (
+                userRepository
+                        .findByPhone(request.getPhone())
+                        .isPresent()
+        ) {
+
+            throw new UserAlreadyExistsException(
+                    "Phone number already exists."
+            );
         }
+
 
         User user = new User();
 
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
+        user.setFullName(
+                request.getFullName()
+        );
+
+        user.setEmail(
+                request.getEmail()
+        );
+
+        user.setPhone(
+                request.getPhone()
+        );
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        request.getPassword()
+                )
+        );
+
+        user.setRole(
+                request.getRole()
+        );
+
 
         return userRepository.save(user);
     }
 
-    // ---------------- LOGIN ----------------
-    public LoginResponse loginUser(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+    // ========================================
+    // LOGIN
+    // ========================================
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+    public LoginResponse loginUser(
+            LoginRequest request
+    ) {
+
+        User user =
+                userRepository
+                        .findByEmail(
+                                request.getEmail()
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new RuntimeException(
+                                                "Invalid email or password"
+                                        )
+                        );
+
+
+        if (
+                !passwordEncoder.matches(
+                        request.getPassword(),
+                        user.getPassword()
+                )
+        ) {
+
+            throw new RuntimeException(
+                    "Invalid email or password"
+            );
         }
 
-        String token = jwtService.generateToken(user.getEmail());
+
+        String token =
+                jwtService.generateToken(
+                        user.getEmail()
+                );
+
 
         return new LoginResponse(
                 token,
@@ -67,5 +144,24 @@ public class UserService {
                 user.getRole(),
                 "Login Successful"
         );
+    }
+
+
+    // ========================================
+    // GET USER BY EMAIL
+    // ========================================
+
+    public User getUserByEmail(
+            String email
+    ) {
+
+        return userRepository
+                .findByEmail(email)
+                .orElseThrow(
+                        () ->
+                                new RuntimeException(
+                                        "User not found."
+                                )
+                );
     }
 }

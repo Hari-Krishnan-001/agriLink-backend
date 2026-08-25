@@ -26,4 +26,11 @@ public class User {
 
     @Column(nullable = false)
     private String role;
+
+    // ========================================
+    // PROFILE PICTURE
+    // ========================================
+
+    @Column(name = "profile_picture")
+    private String profilePicture;
 }
