@@ -19,7 +19,6 @@ public class UserController {
 
     private final UserService userService;
 
-
     // ========================================
     // CONSTRUCTOR
     // ========================================
@@ -27,7 +26,6 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
 
     // ========================================
     // TEST
@@ -38,7 +36,6 @@ public class UserController {
 
         return "AgriConnect Backend is Working!";
     }
-
 
     // ========================================
     // REGISTER
@@ -52,7 +49,6 @@ public class UserController {
         return userService.registerUser(request);
     }
 
-
     // ========================================
     // LOGIN
     // ========================================
@@ -65,6 +61,17 @@ public class UserController {
         return userService.loginUser(request);
     }
 
+    // ========================================
+    // COMMUNITY STATISTICS
+    // ========================================
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getCommunityStats() {
+
+        return ResponseEntity.ok(
+                userService.getCommunityStats()
+        );
+    }
 
     // ========================================
     // GET CURRENT USER PROFILE
@@ -80,10 +87,8 @@ public class UserController {
                         authentication.getName()
                 );
 
-
         Map<String, Object> profile =
                 new HashMap<>();
-
 
         profile.put(
                 "id",
@@ -114,7 +119,6 @@ public class UserController {
                 "profilePicture",
                 user.getProfilePicture()
         );
-
 
         return ResponseEntity.ok(profile);
     }

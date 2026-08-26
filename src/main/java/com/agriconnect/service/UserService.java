@@ -11,13 +11,15 @@ import com.agriconnect.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
 
     // ========================================
     // CONSTRUCTOR
@@ -28,12 +30,10 @@ public class UserService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
-
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
-
 
     // ========================================
     // REGISTER
@@ -54,7 +54,6 @@ public class UserService {
             );
         }
 
-
         if (
                 userRepository
                         .findByPhone(request.getPhone())
@@ -65,7 +64,6 @@ public class UserService {
                     "Phone number already exists."
             );
         }
-
 
         User user = new User();
 
@@ -91,10 +89,8 @@ public class UserService {
                 request.getRole()
         );
 
-
         return userRepository.save(user);
     }
-
 
     // ========================================
     // LOGIN
@@ -116,7 +112,6 @@ public class UserService {
                                         )
                         );
 
-
         if (
                 !passwordEncoder.matches(
                         request.getPassword(),
@@ -129,12 +124,10 @@ public class UserService {
             );
         }
 
-
         String token =
                 jwtService.generateToken(
                         user.getEmail()
                 );
-
 
         return new LoginResponse(
                 token,
@@ -145,7 +138,6 @@ public class UserService {
                 "Login Successful"
         );
     }
-
 
     // ========================================
     // GET USER BY EMAIL
@@ -163,5 +155,30 @@ public class UserService {
                                         "User not found."
                                 )
                 );
+    }
+
+    // ========================================
+    // COMMUNITY STATISTICS
+    // ========================================
+
+    public Map<String, Long> getCommunityStats() {
+
+        long farmers =
+                userRepository.countByRole("FARMER");
+
+        long students =
+                userRepository.countByRole("STUDENT");
+
+        long businesses =
+                userRepository.countByRole("BUSINESS");
+
+        Map<String, Long> stats =
+                new HashMap<>();
+
+        stats.put("farmers", farmers);
+        stats.put("students", students);
+        stats.put("businesses", businesses);
+
+        return stats;
     }
 }
