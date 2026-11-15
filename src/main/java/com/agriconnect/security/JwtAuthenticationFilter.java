@@ -1,6 +1,7 @@
 package com.agriconnect.security;
 
 import com.agriconnect.config.CustomUserDetailsService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,32 +36,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        System.out.println("Authorization Header: " + authHeader);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
+        String token = authHeader.substring(7).trim();
+        if (token.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid bearer token.");
+            return;
+        }
 
-        System.out.println("Token: " + token);
+        try {
+            String email = jwtService.extractEmail(token);
 
-        String email = jwtService.extractEmail(token);
+            if (email == null || email.isBlank()) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid bearer token.");
+                return;
+            }
 
-        System.out.println("Extracted Email: " + email);
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        if (email != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(email);
-
-            System.out.println("Loaded User: " + userDetails.getUsername());
-
-            if (jwtService.isTokenValid(token, userDetails.getUsername())) {
-
-                System.out.println("Token Valid");
+                if (!jwtService.isTokenValid(token, userDetails.getUsername())) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid bearer token.");
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -70,13 +71,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
 
                 authentication.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } catch (JwtException | IllegalArgumentException exception) {
+            SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired bearer token.");
+            return;
         }
 
         filterChain.doFilter(request, response);
