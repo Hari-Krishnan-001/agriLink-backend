@@ -2,46 +2,49 @@ package com.agriconnect.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    // Secret key (Change this in production)
-    private static final String SECRET_KEY =
-            "AgriConnectSecretKey12345678901234567890";
+    private final SecretKey signingKey;
 
-    // Token validity (24 hours)
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
+    // Supply a strong, randomly generated Base64-encoded secret through JWT_SECRET.
+    public JwtService(@Value("${app.security.jwt.secret}") String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET must be configured.");
+        }
 
-    private SecretKey getSigningKey() {
-        return new SecretKeySpec(
-                SECRET_KEY.getBytes(),
-                SignatureAlgorithm.HS256.getJcaName()
-        );
+        try {
+            this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException(
+                    "JWT_SECRET must be valid Base64 containing at least 32 random bytes.",
+                    exception
+            );
+        }
     }
 
-    // Generate JWT Token
-    public String generateToken(String email) {
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24;
 
+    public String generateToken(String email) {
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getSigningKey())
+                .signWith(signingKey)
                 .compact();
     }
 
-    // Extract email from token
     public String extractEmail(String token) {
-
         Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -49,11 +52,8 @@ public class JwtService {
         return claims.getSubject();
     }
 
-    // Validate token
     public boolean isTokenValid(String token, String email) {
-
         String extractedEmail = extractEmail(token);
-
-        return extractedEmail.equals(email);
+        return extractedEmail != null && extractedEmail.equals(email);
     }
 }
